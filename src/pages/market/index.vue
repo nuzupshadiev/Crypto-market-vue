@@ -1,5 +1,12 @@
 <template>
-  <div class="container mx-auto">
+  <div class="container mx-auto px-4 py-6">
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-default-900">Market Overview</h1>
+      <p class="text-default-600 mt-2">
+        Real-time cryptocurrency market data
+      </p>
+    </div>
+    
     <!-- Loading state -->
     <div v-if="!status || !marketData" class="flex flex-col items-center justify-center min-h-[400px] gap-4">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -42,18 +49,18 @@
 
 <script setup lang="ts">
 import { watch, computed, h } from 'vue'
-import { useQuery } from '../composables/useQuery'
-import MarketAPI from '../API/market'
-import CurrencyAPI from '../API/currency'
-import DataTable from './table/index.vue'
-import { useMarketTableData } from '../composables/useTableData'
-import { transformMarketData, calculateVolumePercentages } from '../utils/table-utils'
-import { createMarketTableConfig } from './table/marketTableConfig'
-import { TooltipProvider } from './ui/tooltip'
-import { MarketFilters as MarketFiltersComponent } from './table/filters'
-import type { MarketTableItem, TableColumn, MarketFilters } from '../types/table'
+import { useQuery } from '../../composables/useQuery'
+import MarketAPI from '../../API/market'
+import CurrencyAPI from '../../API/currency'
+import DataTable from '@/components/table/index.vue'
+import { useMarketTableData } from '../../composables/useTableData'
+import { transformMarketData, calculateVolumePercentages } from '../../utils/table-utils'
+import { createMarketTableConfig } from '../../components/table/marketTableConfig'
+import { TooltipProvider } from '../../components/ui/tooltip'
+import { MarketFilters as MarketFiltersComponent } from '../../components/table/filters'
+import type { MarketTableItem, TableColumn, MarketFilters } from '../../types/table'
 
-// Memoize the query function to prevent infinite refetches
+// Memoize the query function 
 const queryData = computed(() => MarketAPI.getAll())
 
 // Use the useQuery composable to fetch market data

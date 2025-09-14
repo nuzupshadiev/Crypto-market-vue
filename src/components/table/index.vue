@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, defineProps, watch } from "vue";
+import { ref, watch } from "vue";
 import { ChevronUp, ChevronDown } from "lucide-vue-next";
 import {
   Table,
