@@ -95,16 +95,6 @@ function getNestedValue(obj: any, path: string) {
       <div class="text-default-500 text-center">
         <p class="text-lg">{{ props.config.emptyMessage || "No data available" }}</p>
       </div>
-      <!-- <button
-        v-if="props.onRefresh"
-        @click="props.onRefresh"
-        :disabled="props.loading"
-        class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <span :class="{ 'animate-pulse': props.loading }">
-          {{ props.loading ? 'Refreshing...' : 'Refresh' }}
-        </span>
-      </button> -->
     </div>
 
     <!-- Table -->

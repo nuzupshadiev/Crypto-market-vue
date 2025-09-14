@@ -1,4 +1,3 @@
-// src/api/market.ts
 import { Endpoint } from "./endpoint";
 
 export interface MarketPair {

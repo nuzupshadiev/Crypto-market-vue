@@ -1,4 +1,3 @@
-// src/api/currency.ts
 import { Endpoint } from "./endpoint";
 
 export interface CurrencyItem {
