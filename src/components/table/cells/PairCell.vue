@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { CurrencyIcon } from "@/components/currency-icon/index";
 import type { MarketTableItem } from "@/types/table";
 
@@ -11,16 +12,23 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const baseCurrency = props.currencyMap?.[props.item.pair.primary];
-const quoteCurrency = props.currencyMap?.[props.item.pair.secondary];
+// Make these computed so they react to currencyMap changes
+const baseCurrency = computed(() => props.currencyMap?.[props.item.pair.primary]);
+const quoteCurrency = computed(() => props.currencyMap?.[props.item.pair.secondary]);
 
-const tickerSymbol =
-  baseCurrency?.data?.ticker?.toUpperCase() ||
-  props.baseTicker?.toUpperCase() ||
-  props.item.pair.primary;
+const tickerSymbol = computed(() => {
+  return baseCurrency.value?.data?.ticker?.toUpperCase() ||
+    props.baseTicker?.toUpperCase() ||
+    props.item.pair.primary;
+});
 
-const quoteTicker = quoteCurrency?.data?.ticker || props.item.pair.secondary;
-const baseCode = baseCurrency?.data?.code || props.item.pair.primary;
+const quoteTicker = computed(() => {
+  return quoteCurrency.value?.data?.ticker || props.item.pair.secondary;
+});
+
+const baseCode = computed(() => {
+  return baseCurrency.value?.data?.code || props.item.pair.primary;
+});
 </script>
 
 <template>

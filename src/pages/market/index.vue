@@ -8,7 +8,7 @@
     </div>
     
     <!-- Loading state -->
-    <div v-if="!status || !marketData" class="flex flex-col items-center justify-center min-h-[400px] gap-4">
+    <div v-if="!status || !marketData || !currencyStatus || !currencyMap" class="flex flex-col items-center justify-center min-h-[400px] gap-4">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       <p class="text-default-500">Loading market data...</p>
     </div>
@@ -80,6 +80,7 @@ const {
 const currencyQueryData = computed(() => CurrencyAPI.getAllAsMap())
 const {
   data: currencyMap,
+  status: currencyStatus,
 } = useQuery(currencyQueryData, {
   enabled: true,
   keepPreviousData: true,
