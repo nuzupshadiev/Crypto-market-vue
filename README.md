@@ -167,7 +167,6 @@ The application features a sophisticated design system built on modern web stand
 - **Shadcn UI Vue**: Accessible component primitives with custom implementations
 - **Lucide Icons**: Beautiful, customizable SVG icons throughout the interface
 - **Custom Components**: Specialized table cells, filters, and interactive elements
-- **Responsive Design**: Mobile-first approach with adaptive layouts
 
 ## 🔧 Development Architecture
 
