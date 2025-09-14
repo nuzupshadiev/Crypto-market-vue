@@ -138,10 +138,12 @@ export const filterData = <T>(
 
       // Check ticker-based search for market items
       let matchesTickerSearch = false;
-      if (currencyMap && (item as any).pair) {
+      if (currencyMap && !isEmpty(currencyMap) && (item as any).pair) {
         const marketItem = item as any;
         const baseCurrency = currencyMap[marketItem.pair.primary];
         const quoteCurrency = currencyMap[marketItem.pair.secondary];
+
+        // Validate currency data exists and has ticker information
         const baseTicker =
           baseCurrency?.data?.ticker?.toLowerCase() ||
           marketItem.pair.primary.toLowerCase();

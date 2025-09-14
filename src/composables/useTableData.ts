@@ -10,6 +10,7 @@ import {
   filterData,
   getNestedValue,
   createMarketFilters,
+  isEmpty,
 } from "@/utils/table-utils";
 
 /**
@@ -96,11 +97,31 @@ export function useMarketTableData(
   initialData: any[] = [],
   currencyMap?: Record<string, any>
 ) {
+  // Create reactive currency map
+  const reactiveCurrencyMap = ref<Record<string, any> | undefined>(
+    currencyMap && !isEmpty(currencyMap) ? currencyMap : undefined
+  );
+
   const { state, actions } = useTableData(
     initialData,
     getNestedValue,
-    currencyMap
+    reactiveCurrencyMap.value
   );
+
+  // Override the filteredData to use reactive currency map
+  const filteredData = computed(() => {
+    return filterData(
+      state.value.data,
+      state.value.filterConfig,
+      getNestedValue,
+      reactiveCurrencyMap.value
+    );
+  });
+
+  // Override the sortedData to use our filteredData
+  const sortedData = computed(() => {
+    return sortData(filteredData.value, state.value.sortConfig, getNestedValue);
+  });
 
   const marketFilters = ref<MarketFilters>({
     search: "",
@@ -132,6 +153,20 @@ export function useMarketTableData(
       updateMarketFilters({ direction }),
     setChangeRange: (min: number, max: number) =>
       updateMarketFilters({ changeMin: min, changeMax: max }),
+    updateCurrencyMap: (newCurrencyMap?: Record<string, any>) => {
+      // Validate and update currency map
+      const validatedMap =
+        newCurrencyMap && !isEmpty(newCurrencyMap) ? newCurrencyMap : undefined;
+
+      // Update the reactive currency map
+      reactiveCurrencyMap.value = validatedMap;
+
+      // Re-trigger filtering with new currency map
+      if (validatedMap) {
+        const filterConfig = createMarketFilters(marketFilters.value);
+        actions.setFilterConfig(filterConfig);
+      }
+    },
     clearFilters: () => {
       marketFilters.value = {
         search: "",
@@ -147,6 +182,8 @@ export function useMarketTableData(
 
   const marketState = computed(() => ({
     ...state.value,
+    filteredData: filteredData.value,
+    sortedData: sortedData.value,
     marketFilters: marketFilters.value,
   }));
 

@@ -4,7 +4,7 @@
     <div class="flex flex-col sm:flex-row justify-between gap-3">
       <Input
         v-model="searchValue"
-        placeholder="Search by name or ticker symbol..."
+        :placeholder="searchPlaceholder"
         class="w-full sm:max-w-xs"
         @update:modelValue="(value: string | number) => handleSearchChange(String(value))"
       >
@@ -48,12 +48,14 @@
           <SelectContent>
             <SelectItem
               v-for="base in baseOptions"
-              :key="base"
-              :value="base"
+              :key="base.code"
+              :value="base.code"
             >
               <CurrencyOption 
-                :currency="base" 
-                :currency-icons="currencyIcons" 
+                :currency="base.code" 
+                :currency-icons="currencyIcons"
+                :ticker="base.ticker"
+                :display-text="base.displayText"
               />
             </SelectItem>
           </SelectContent>
@@ -74,12 +76,14 @@
           <SelectContent>
             <SelectItem
               v-for="quote in quoteOptions"
-              :key="quote"
-              :value="quote"
+              :key="quote.code"
+              :value="quote.code"
             >
               <CurrencyOption 
-                :currency="quote" 
-                :currency-icons="currencyIcons" 
+                :currency="quote.code" 
+                :currency-icons="currencyIcons"
+                :ticker="quote.ticker"
+                :display-text="quote.displayText"
               />
             </SelectItem>
           </SelectContent>
@@ -129,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, h, defineComponent, type PropType } from 'vue'
+import { ref, watch, h, defineComponent, computed, type PropType } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { 
@@ -142,6 +146,7 @@ import {
 import { Search, RefreshCw } from 'lucide-vue-next'
 import { CurrencyIcon } from '@/components/currency-icon'
 import { useDebouncedSearch } from '@/composables/useTableData'
+import { isEmpty } from '@/utils/table-utils'
 import type { MarketFilters as MarketFiltersType } from '@/types/table'
 
 // Utility function to format currency display
@@ -157,6 +162,14 @@ const CurrencyOption = defineComponent({
     currencyIcons: {
       type: Object as PropType<Record<string, string>>,
       required: true
+    },
+    ticker: {
+      type: String,
+      required: false
+    },
+    displayText: {
+      type: String,
+      required: false
     }
   },
   setup(props) {
@@ -166,17 +179,24 @@ const CurrencyOption = defineComponent({
         alt: props.currency,
         size: 16
       }),
-      h('span', formatCurrencyDisplay(props.currency))
+      h('span', props.displayText || formatCurrencyDisplay(props.currency))
     ])
   }
 })
 
+interface CurrencyOption {
+  code: string
+  ticker: string
+  displayText: string
+}
+
 interface Props {
   filters: MarketFiltersType
   onFiltersChange: (filters: Partial<MarketFiltersType>) => void
-  baseOptions: string[]
-  quoteOptions: string[]
+  baseOptions: CurrencyOption[]
+  quoteOptions: CurrencyOption[]
   currencyIcons: Record<string, string>
+  currencyMap?: Record<string, any>
   onRefresh?: () => void
   loading?: boolean
 }
@@ -192,6 +212,14 @@ const { searchValue, handleSearchChange } = useDebouncedSearch(
   (value: string) => props.onFiltersChange({ search: value }),
   300
 )
+
+// Computed search placeholder based on currency map availability
+const searchPlaceholder = computed(() => {
+  const hasValidCurrencyMap = props.currencyMap && !isEmpty(props.currencyMap)
+  return hasValidCurrencyMap 
+    ? "Search by name or ticker symbol..."
+    : "Search by name... (ticker search unavailable)"
+})
 
 // Watch for external filter changes
 watch(() => props.filters.baseCurrencies, (newValue) => {

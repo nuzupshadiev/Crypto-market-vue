@@ -17,6 +17,7 @@
           :base-options="baseCurrencyOptions"
           :quote-options="quoteCurrencyOptions"
           :currency-icons="currencyIcons"
+          :currency-map="currencyMap || undefined"
           :on-refresh="refetch"
           :loading="loading"
         />
@@ -46,7 +47,7 @@ import MarketAPI from '../API/market'
 import CurrencyAPI from '../API/currency'
 import DataTable from './table/index.vue'
 import { useMarketTableData } from '../composables/useTableData'
-import { transformMarketData, calculateVolumePercentages, createMarketFilters } from '../utils/table-utils'
+import { transformMarketData, calculateVolumePercentages } from '../utils/table-utils'
 import { createMarketTableConfig } from './table/marketTableConfig'
 import { TooltipProvider } from './ui/tooltip'
 import { MarketFilters as MarketFiltersComponent } from './table/filters'
@@ -89,7 +90,7 @@ const currencyIcons = computed(() => {
   return icons
 })
 
-// Extract unique base and quote currencies for filter options
+// Extract unique base and quote currencies for filter options with ticker info
 const baseCurrencyOptions = computed(() => {
   if (!processedData.value) return []
   
@@ -99,7 +100,16 @@ const baseCurrencyOptions = computed(() => {
       baseCurrencies.add(item.pair.primary)
     }
   })
-  return Array.from(baseCurrencies).sort()
+  
+  return Array.from(baseCurrencies).map(code => {
+    const currency = currencyMap.value?.[code]
+    const ticker = currency?.data?.ticker || code
+    return {
+      code,
+      ticker,
+      displayText: `${ticker.toUpperCase()} (${code})`
+    }
+  })
 })
 
 const quoteCurrencyOptions = computed(() => {
@@ -111,7 +121,16 @@ const quoteCurrencyOptions = computed(() => {
       quoteCurrencies.add(item.pair.secondary)
     }
   })
-  return Array.from(quoteCurrencies).sort()
+  
+  return Array.from(quoteCurrencies).map(code => {
+    const currency = currencyMap.value?.[code]
+    const ticker = currency?.data?.ticker || code
+    return {
+      code,
+      ticker,
+      displayText: `${ticker} (${code})`
+    }
+  })
 })
 
 // Process market data
@@ -133,9 +152,8 @@ const { state, actions } = useMarketTableData(
 
 // Watch currency map for updates
 watch(currencyMap, (newMap) => {
-  if (newMap) {
-    console.log('Currency map loaded with', Object.keys(newMap).length, 'currencies');
-  }
+  // Always update the currency map, even if it's null/undefined
+  actions.updateCurrencyMap(newMap || undefined);
 }, { immediate: true })
 
 
@@ -148,13 +166,6 @@ watch(processedData, (newData) => {
   }
 }, { immediate: true })
 
-// Update currency map when it changes
-watch(currencyMap, (newMap) => {
-  if (newMap) {
-    // Re-trigger filtering with new currency map
-    actions.setFilterConfig(createMarketFilters(state.value.marketFilters))
-  }
-}, { immediate: true })
 
 
 // Actions wrapper

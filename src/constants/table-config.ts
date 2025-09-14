@@ -2,18 +2,6 @@ import type { TableColumn } from "@/types/table";
 import type { MarketTableItem } from "@/types/table";
 
 /**
- * Default table configuration
- */
-export const DEFAULT_TABLE_CONFIG = {
-  sortable: true,
-  filterable: true,
-  selectable: false,
-  pagination: false,
-  loading: false,
-  emptyMessage: "No data available",
-};
-
-/**
  * Market table column definitions
  */
 export const MARKET_TABLE_COLUMNS: TableColumn<MarketTableItem>[] = [
