@@ -12,7 +12,7 @@ export class Endpoint<OutputT> {
 
   constructor(method: Method, baseURL?: string) {
     // Use Vite env variable instead of Next.js
-    baseURL = baseURL ?? import.meta.env.VITE_BADAM_NET_ENDPOINT;
+    baseURL = baseURL ?? import.meta.env.VITE_API_ENDPOINT;
     this.instance = axios.create({ baseURL });
     this.method = method;
   }
