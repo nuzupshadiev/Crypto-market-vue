@@ -68,8 +68,11 @@ function getNestedValue(obj: any, path: string) {
   <div class="space-y-4">
     <!-- Loading state -->
     <div v-if="props.loading" class="flex flex-col items-center justify-center min-h-[400px] gap-4">
-      <span class="spinner">Loading...</span>
-      <p class="text-default-500">Loading data...</p>
+      <!-- Spinner -->
+      <div class="w-10 h-10 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+      
+      <!-- Loading text -->
+      <p class="text-gray-500">Loading data...</p>
     </div>
 
     <!-- Error state -->

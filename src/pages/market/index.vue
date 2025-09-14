@@ -6,11 +6,12 @@
         Real-time cryptocurrency market data
       </p>
     </div>
-    
     <!-- Loading state -->
-    <div v-if="!status || !marketData || !currencyStatus || !currencyMap" class="flex flex-col items-center justify-center min-h-[400px] gap-4">
-      <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      <p class="text-default-500">Loading market data...</p>
+    <div v-if="!marketStore.markets || !currencyStore.currencies" class="flex flex-col items-center justify-center min-h-[400px] gap-4">
+      <div class="w-10 h-10 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
+      
+      <!-- Loading text -->
+      <p class="text-gray-500">Loading market and currency data...</p>
     </div>
 
     <!-- Data Table -->
@@ -24,9 +25,9 @@
           :base-options="baseCurrencyOptions"
           :quote-options="quoteCurrencyOptions"
           :currency-icons="currencyIcons"
-          :currency-map="currencyMap || undefined"
+          :currency-map="currencyStore.currencyMap || undefined"
           :on-refresh="refetch"
-          :loading="loading"
+          :loading="marketStore.loading || currencyStore.loading"
         />
       </div>
       
@@ -38,7 +39,7 @@
           :sort-config="state.sortConfig"
           :on-sort="loggedActions.setSorting"
           :on-refresh="refetch"
-          :loading="loading"
+          :loading="marketStore.loading || currencyStore.loading"
           :error="state.error"
           :footer-content="footerContent"
         />
@@ -49,9 +50,8 @@
 
 <script setup lang="ts">
 import { watch, computed, h } from 'vue'
-import { useQuery } from '../../composables/useQuery'
-import MarketAPI from '../../API/market'
-import CurrencyAPI from '../../API/currency'
+import { useCurrencyStore } from '../../stores/currency'
+import { useMarketStore } from '../../stores/market'
 import DataTable from '@/components/table/index.vue'
 import { useMarketTableData } from '../../composables/useTableData'
 import { transformMarketData, calculateVolumePercentages } from '../../utils/table-utils'
@@ -60,42 +60,14 @@ import { TooltipProvider } from '../../components/ui/tooltip'
 import { MarketFilters as MarketFiltersComponent } from '../../components/table/filters'
 import type { MarketTableItem, TableColumn, MarketFilters } from '../../types/table'
 
-// Memoize the query function 
-const queryData = computed(() => MarketAPI.getAll())
-
-// Use the useQuery composable to fetch market data
-const {
-  data: marketData,
-  status,
-  loading,
-  lastUpdated,
-  refetch,
-} = useQuery<MarketAPI[]>(queryData, {
-  refetchInterval: 10000,
-  enabled: true,
-  keepPreviousData: true,
-})
-
-// Fetch currency data
-const currencyQueryData = computed(() => CurrencyAPI.getAllAsMap())
-const {
-  data: currencyMap,
-  status: currencyStatus,
-} = useQuery(currencyQueryData, {
-  enabled: true,
-  keepPreviousData: true,
-})
+// Use stores
+const currencyStore = useCurrencyStore()
+const marketStore = useMarketStore()
 
 
 // Process currency data to create icons map
 const currencyIcons = computed(() => {
-  if (!currencyMap.value) return {}
-  
-  const icons: Record<string, string> = {}
-  Object.entries(currencyMap.value).forEach(([code, currency]) => {
-    icons[code] = currency.getIconDataUrl()
-  })
-  return icons
+  return currencyStore.currencyIcons
 })
 
 // Extract unique base and quote currencies for filter options with ticker info
@@ -110,7 +82,7 @@ const baseCurrencyOptions = computed(() => {
   })
   
   return Array.from(baseCurrencies).map(code => {
-    const currency = currencyMap.value?.[code]
+    const currency = currencyStore.currencyMap[code]
     const ticker = currency?.data?.ticker || code
     return {
       code,
@@ -131,7 +103,7 @@ const quoteCurrencyOptions = computed(() => {
   })
   
   return Array.from(quoteCurrencies).map(code => {
-    const currency = currencyMap.value?.[code]
+    const currency = currencyStore.currencyMap[code]
     const ticker = currency?.data?.ticker || code
     return {
       code,
@@ -143,23 +115,23 @@ const quoteCurrencyOptions = computed(() => {
 
 // Process market data
 const processedData = computed(() => {
-  if (!marketData.value) {
+  if (!marketStore.markets) {
     // Return test data when no real data is available
     return []
   }
   
-  const transformed = transformMarketData(marketData.value)
+  const transformed = transformMarketData(marketStore.markets)
   return calculateVolumePercentages(transformed)
 })
 
 // Use market table data hook
 const { state, actions } = useMarketTableData(
   [], // Start with empty array
-  currencyMap.value || undefined // Use currency map
+  currencyStore.currencyMap || undefined // Use currency map
 )
 
 // Watch currency map for updates
-watch(currencyMap, (newMap) => {
+watch(() => currencyStore.currencyMap, (newMap) => {
   // Always update the currency map, even if it's null/undefined
   actions.updateCurrencyMap(newMap || undefined);
 }, { immediate: true })
@@ -175,6 +147,12 @@ watch(processedData, (newData) => {
 }, { immediate: true })
 
 
+
+// Refetch function
+const refetch = () => {
+  marketStore.refetch()
+  currencyStore.refetch()
+}
 
 // Actions wrapper
 const loggedActions = {
@@ -221,7 +199,7 @@ const handleFiltersChange = (newFilters: Partial<MarketFilters>) => {
 const marketTableConfig = computed(() => {
   const config = createMarketTableConfig({
     currencyIcons: currencyIcons.value,
-    currencyMap: currencyMap.value || undefined
+    currencyMap: currencyStore.currencyMap || undefined
   })
   
   
@@ -255,7 +233,7 @@ const marketTableConfig = computed(() => {
 const footerContent = computed(() => {
   return h('div', { class: 'flex flex-col justify-between text-sm text-muted-foreground' }, [
     h('span', `Showing ${state.value.sortedData?.length || 0} market pairs`),
-    h('span', `Last updated: ${lastUpdated.value ? lastUpdated.value.toLocaleTimeString() : 'Never'}`)
+    h('span', `Last updated: ${marketStore.lastUpdated ? marketStore.lastUpdated.toLocaleTimeString() : 'Never'}`)
   ])
 })
 

@@ -1,85 +1,115 @@
 import { defineStore } from "pinia";
-import { computed } from "vue";
-import { useQuery } from "@/composables/useQuery";
-import CurrencyAPI from "@/API/currency";
+import { ref, computed } from "vue";
+import { useQuery } from "../composables/useQuery";
+import CurrencyAPI from "../API/currency";
 
 export const useCurrencyStore = defineStore("currency", () => {
-  const queryData = computed(() => CurrencyAPI.getAll());
+  // Memoized query data
+  const currenciesQuery = computed(() => CurrencyAPI.getAll());
+  const currencyMapQuery = computed(() => CurrencyAPI.getAllAsMap());
+
+  // Use useQuery for currencies
   const {
-    data: currenciesData,
-    loading,
-    lastUpdated,
-    refetch,
-  } = useQuery(queryData, {
+    data: currencies,
+    loading: currenciesLoading,
+    lastUpdated: currenciesLastUpdated,
+    refetch: refetchCurrencies,
+  } = useQuery<CurrencyAPI[]>(currenciesQuery, {
     enabled: true,
     keepPreviousData: true,
   });
 
-  const currencies = computed(() => {
-    if (!currenciesData.value) return [];
-    return currenciesData.value.map((c) => c.data);
+  // Use useQuery for currency map
+  const {
+    data: currencyMapData,
+    loading: currencyMapLoading,
+    lastUpdated: currencyMapLastUpdated,
+    refetch: refetchCurrencyMap,
+  } = useQuery<Record<string, CurrencyAPI>>(currencyMapQuery, {
+    enabled: true,
+    keepPreviousData: true,
   });
+
+  // Computed state
+  const loading = computed(
+    () => currenciesLoading.value || currencyMapLoading.value
+  );
+  const error = ref<string | null>(null);
+  const lastUpdated = computed(
+    () => currenciesLastUpdated.value || currencyMapLastUpdated.value || null
+  );
+
+  // Getters
   const currencyMap = computed(() => {
-    if (!currencies.value.length) return {};
-    return Object.fromEntries(
-      currencies.value.map((currency) => [currency.code, currency])
-    );
+    if (currencyMapData.value) {
+      return currencyMapData.value;
+    }
+    if (currencies.value) {
+      return Object.fromEntries(
+        currencies.value.map((currency) => [currency.data.code, currency])
+      );
+    }
+    return {};
+  });
+
+  const primaryCurrencies = computed(() => {
+    if (!currencies.value) return [];
+    return currencies.value.filter((currency) => currency.isPrimary());
+  });
+
+  const secondaryCurrencies = computed(() => {
+    if (!currencies.value) return [];
+    return currencies.value.filter((currency) => currency.isSecondary());
   });
 
   const currencyIcons = computed(() => {
     const icons: Record<string, string> = {};
-    Object.entries(currencyMap.value).forEach(([code, currency]) => {
-      icons[code] = currency.icon.startsWith("data:")
-        ? currency.icon
-        : `data:image/svg+xml;base64,${currency.icon}`;
-    });
+    if (currencies.value) {
+      currencies.value.forEach((currency) => {
+        icons[currency.data.code] = currency.getIconDataUrl();
+      });
+    }
     return icons;
   });
 
-  const primaryCurrencies = computed(() => {
-    return currencies.value
-      .filter((c) => c.type === "Primary")
-      .sort((a, b) => a.sort_order - b.sort_order);
-  });
-
-  const secondaryCurrencies = computed(() => {
-    return currencies.value
-      .filter((c) => c.type === "Secondary")
-      .sort((a, b) => a.sort_order - b.sort_order);
-  });
-
-  const allCurrenciesSorted = computed(() => {
-    return [...currencies.value].sort((a, b) => a.sort_order - b.sort_order);
-  });
-
+  // Actions
   const getCurrencyByCode = (code: string) => {
+    if (!currencies.value) return undefined;
     return currencies.value.find(
-      (c) => c.code.toUpperCase() === code.toUpperCase()
+      (currency) => currency.data.code.toLowerCase() === code.toLowerCase()
     );
   };
 
-  const getCurrencyIcon = (code: string) => {
-    return currencyIcons.value[code.toUpperCase()];
+  const clearError = () => {
+    error.value = null;
   };
 
-  const formatAmount = (amount: number, currencyCode: string) => {
-    const currency = getCurrencyByCode(currencyCode);
-    if (!currency) return amount.toString();
-    return amount.toFixed(currency.decimals_places);
+  const refetch = () => {
+    refetchCurrencies();
+    refetchCurrencyMap();
+  };
+
+  const reset = () => {
+    error.value = null;
   };
 
   return {
+    // State
     currencies,
     loading,
+    error,
     lastUpdated,
-    refetch,
+
+    // Getters
     currencyMap,
-    currencyIcons,
     primaryCurrencies,
     secondaryCurrencies,
-    allCurrenciesSorted,
+    currencyIcons,
+
+    // Actions
     getCurrencyByCode,
-    getCurrencyIcon,
-    formatAmount,
+    clearError,
+    refetch,
+    reset,
   };
 });
