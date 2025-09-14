@@ -63,18 +63,4 @@ export default class MarketAPI {
     });
   }
 
-  /** Get a specific market pair */
-  static getByPair(primary: string, secondary: string): Promise<MarketAPI> {
-    return this.getAll().then((markets) => {
-      const found = markets.find(
-        (m) =>
-          m.data.pair.primary.toLowerCase() === primary.toLowerCase() &&
-          m.data.pair.secondary.toLowerCase() === secondary.toLowerCase()
-      );
-      if (!found) {
-        throw new Error(`Market ${primary}/${secondary} not found`);
-      }
-      return found;
-    });
-  }
 }

@@ -6,7 +6,6 @@ import CurrencyAPI from "../API/currency";
 export const useCurrencyStore = defineStore("currency", () => {
   // Memoized query data
   const currenciesQuery = computed(() => CurrencyAPI.getAll());
-  const currencyMapQuery = computed(() => CurrencyAPI.getAllAsMap());
 
   // Use useQuery for currencies
   const {
@@ -19,47 +18,19 @@ export const useCurrencyStore = defineStore("currency", () => {
     keepPreviousData: true,
   });
 
-  // Use useQuery for currency map
-  const {
-    data: currencyMapData,
-    loading: currencyMapLoading,
-    lastUpdated: currencyMapLastUpdated,
-    refetch: refetchCurrencyMap,
-  } = useQuery<Record<string, CurrencyAPI>>(currencyMapQuery, {
-    enabled: true,
-    keepPreviousData: true,
-  });
-
   // Computed state
-  const loading = computed(
-    () => currenciesLoading.value || currencyMapLoading.value
-  );
+  const loading = computed(() => currenciesLoading.value);
   const error = ref<string | null>(null);
-  const lastUpdated = computed(
-    () => currenciesLastUpdated.value || currencyMapLastUpdated.value || null
-  );
+  const lastUpdated = computed(() => currenciesLastUpdated.value || null);
 
   // Getters
   const currencyMap = computed(() => {
-    if (currencyMapData.value) {
-      return currencyMapData.value;
-    }
     if (currencies.value) {
       return Object.fromEntries(
         currencies.value.map((currency) => [currency.data.code, currency])
       );
     }
     return {};
-  });
-
-  const primaryCurrencies = computed(() => {
-    if (!currencies.value) return [];
-    return currencies.value.filter((currency) => currency.isPrimary());
-  });
-
-  const secondaryCurrencies = computed(() => {
-    if (!currencies.value) return [];
-    return currencies.value.filter((currency) => currency.isSecondary());
   });
 
   const currencyIcons = computed(() => {
@@ -72,21 +43,12 @@ export const useCurrencyStore = defineStore("currency", () => {
     return icons;
   });
 
-  // Actions
-  const getCurrencyByCode = (code: string) => {
-    if (!currencies.value) return undefined;
-    return currencies.value.find(
-      (currency) => currency.data.code.toLowerCase() === code.toLowerCase()
-    );
-  };
-
   const clearError = () => {
     error.value = null;
   };
 
   const refetch = () => {
     refetchCurrencies();
-    refetchCurrencyMap();
   };
 
   const reset = () => {
@@ -102,12 +64,9 @@ export const useCurrencyStore = defineStore("currency", () => {
 
     // Getters
     currencyMap,
-    primaryCurrencies,
-    secondaryCurrencies,
     currencyIcons,
 
     // Actions
-    getCurrencyByCode,
     clearError,
     refetch,
     reset,
